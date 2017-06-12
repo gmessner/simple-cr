@@ -12,20 +12,20 @@ import org.skife.jdbi.v2.DBI;
 
 public class TestPushDAO {
 
-	@Test
-	public void test () {
-		
-		JdbcConnectionPool ds = JdbcConnectionPool.create("jdbc:h2:./dbdata/simple-cr", "admin", "!nimda!");
-		DBI dbi = new DBI(ds);
-		PushDAO dao = dbi.open(PushDAO.class);
-		dao.dropTable();
-		dao.createTable();
-		dao.insert(417, 123, "new-feature", "0000000000", "01234567890");
-		List<Push> pushList = dao.find(417, 123, "new-feature");
-		for (Push push : pushList) {
-			System.out.println("id=" + push.getId());
-		}
-		assertNotNull(pushList);
-	}
+    @Test
+    public void test() {
+
+        JdbcConnectionPool ds = JdbcConnectionPool.create("jdbc:h2:./dbdata/simple-cr-test", "admin", "!nimda!");
+        DBI dbi = new DBI(ds);
+        PushDAO dao = dbi.open(PushDAO.class);
+        dao.dropTable();
+        dao.createTable();
+        dao.insert(417, 123, "new-feature", "0000000000", "01234567890");
+        List<Push> pushList = dao.find(417, 123, "new-feature");
+        for (Push push : pushList) {
+            System.out.println("id=" + push.getId());
+        }
+        assertNotNull(pushList);
+    }
 
 }
