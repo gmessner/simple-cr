@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+	version="3.0">
+	<display-name>Simple CR - Code Review Simplified</display-name>
+
+	<servlet>
+		<servlet-name>default</servlet-name>
+		<servlet-class>org.eclipse.jetty.servlet.DefaultServlet</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>default</servlet-name>
+		<url-pattern>/app/*</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
+		<servlet-name>H2Console</servlet-name>
+		<servlet-class>org.h2.server.web.WebServlet</servlet-class>
+		<init-param>
+			<param-name>webAllowOthers</param-name>
+			<param-value>true</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>H2Console</servlet-name>
+		<url-pattern>/h2console/*</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
+		<servlet-name>SimpleCrResources</servlet-name>
+		<servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
+		<init-param>
+			<param-name>jersey.config.server.provider.packages</param-name>
+			<param-value>org.gitlab4j.codereview,org.gitlab4j.webhook,org.gitlab4j.api</param-value>
+		</init-param>
+		<load-on-startup>2</load-on-startup>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>SimpleCrResources</servlet-name>
+		<url-pattern>/*</url-pattern>
+	</servlet-mapping>
+
+	<context-param>
+		<param-name>db.url</param-name>
+		<param-value>jdbc:h2:./simple-cr</param-value>
+	</context-param>
+
+	<context-param>
+		<param-name>db.user</param-name>
+		<param-value>admin</param-value>
+	</context-param>
+
+	<context-param>
+		<param-name>db.password</param-name>
+		<param-value>!nimda!</param-value>
+	</context-param>
+
+</web-app>

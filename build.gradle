@@ -1,0 +1,96 @@
+task wrapper(type: Wrapper) { gradleVersion = '3.5' }
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'eclipse'
+
+group = 'org.gitlab4j'
+version = '1.0.0-SNAPSHOT'
+mainClassName = 'org.gitlab4j.codereview.CodeReviewServer'
+description = 'Simple-CR - GitLab Code Reviews, Simplifed'
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+ext {
+    gitlab4jVersion = '4.2.1'
+    h2Version = '1.4.196'
+    jettyVersion = '9.2.21.v20170120'
+    jerseyVersion = '2.25.1'
+    servletVersion = '3.1.0'
+    junitVersion = '4.12'
+}
+
+dependencies {
+    compile "org.gitlab4j:gitlab4j-api:$gitlab4jVersion"
+    compile "org.eclipse.jetty:jetty-server:$jettyVersion"
+    compile "org.eclipse.jetty:jetty-webapp:$jettyVersion"
+    compile "org.glassfish.jersey.core:jersey-server:$jerseyVersion"
+    compile "org.glassfish.jersey.containers:jersey-container-servlet:$jerseyVersion"
+    compile "org.glassfish.jersey.media:jersey-media-json-jackson:$jerseyVersion"
+    compile "javax.servlet:javax.servlet-api:$servletVersion"
+    compile "javax.mail:javax.mail-api:1.5.6"
+    compile "org.apache.velocity:velocity:1.7"
+    compile "com.h2database:h2:1.4.194"
+    compile "org.apache.commons:commons-configuration2:2.1.1"
+    compile "commons-beanutils:commons-beanutils:1.9.3"
+    compile "commons-logging:commons-logging:1.2"
+    compile "org.apache.commons:commons-email:1.4"
+    compile "net.sf.jopt-simple:jopt-simple:5.0.3"
+    compile "org.jdbi:jdbi:2.78"
+    testCompile "junit:junit:$junitVersion"
+}
+
+// Set up the resources source set to include src/main/webapp
+sourceSets {
+    main {
+        resources {
+            srcDirs "src/main/resources", "src/main/webapp"
+        }
+    }
+}
+
+// Makes sure the build/docker directory is created 
+task createBuildDockerDir() {
+    outputs.dir file("$buildDir")
+    def dir = new File(project.buildDir, 'docker')
+    if (!dir.exists()) {
+        dir.mkdirs()
+    }
+}
+
+// Copy all the Docker assets in the project's src/main/docker directory and
+// the exploded distTar archive file to the build/docker directory
+task copyDockerAssets(type: Copy, dependsOn: [createBuildDockerDir, distTar] ) {
+    
+    includeEmptyDirs = false
+    
+    from (tarTree(distTar.archivePath)) {
+        
+        into project.name
+        eachFile {details ->
+            def targetPath = (details.path - (project.name + '-' + project.version))
+            details.path = targetPath
+        }
+    }
+    
+    from 'src/main/docker'
+    into 'build/docker'
+}
+
+// Execute a docker build with the Dockerfile and assets copied into build/docker by copyDockerAssets
+task dockerBuild(type: Exec, dependsOn: copyDockerAssets) {   
+    logging.captureStandardOutput LogLevel.LIFECYCLE
+    logging.captureStandardError  LogLevel.ERROR
+    commandLine 'docker', 'build', '-t', project.name + ':' + project.version, "$buildDir/docker"
+}
+
+// Builds the docker image and tags it with "latest"
+task dockerize(type: Exec, dependsOn: dockerBuild) {
+    commandLine 'docker', 'tag', project.name + ':' + project.version, project.name + ':latest'
+}
