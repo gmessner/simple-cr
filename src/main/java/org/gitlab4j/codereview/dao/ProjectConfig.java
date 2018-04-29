@@ -13,8 +13,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import org.gitlab4j.api.utils.JacksonJson;
 import org.gitlab4j.codereview.utils.StringUtils;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.core.statement.StatementContext;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -224,9 +224,9 @@ public class ProjectConfig {
         return (StringUtils.getListFromString(excludeMailTo, ";"));
     }
 
-    public static class ProjectConfigMapper implements ResultSetMapper<ProjectConfig> {
+    public static class ProjectConfigMapper implements RowMapper<ProjectConfig> {
 
-        public ProjectConfig map(int index, ResultSet rs, StatementContext context) throws SQLException {
+        public ProjectConfig map(ResultSet rs, StatementContext context) throws SQLException {
 
             ProjectConfig config = new ProjectConfig();
             config.id = rs.getInt("id");

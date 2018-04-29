@@ -5,8 +5,8 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Date;
 
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.core.statement.StatementContext;
 
 public class Push {
 
@@ -195,9 +195,9 @@ public class Push {
         this.mergedById = mergedById;
     }
 
-    public static class PushMapper implements ResultSetMapper<Push> {
+    public static class PushMapper implements RowMapper<Push> {
 
-        public Push map(int index, ResultSet rs, StatementContext context) throws SQLException {
+        public Push map(ResultSet rs, StatementContext context) throws SQLException {
 
             Push push = new Push();
             push.id = rs.getInt("id");

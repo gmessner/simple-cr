@@ -1,26 +1,24 @@
 package org.gitlab4j.codereview.dao;
 
 import java.util.Date;
+
 import java.util.List;
 
 import org.gitlab4j.codereview.dao.Push.PushMapper;
-import org.skife.jdbi.v2.sqlobject.Bind;
-import org.skife.jdbi.v2.sqlobject.BindBean;
-import org.skife.jdbi.v2.sqlobject.SqlQuery;
-import org.skife.jdbi.v2.sqlobject.SqlUpdate;
-import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapper;
+import org.jdbi.v3.sqlobject.customizer.*;
+import org.jdbi.v3.sqlobject.statement.*;
+import org.jdbi.v3.sqlobject.config.*;
 
-@RegisterMapper(PushMapper.class)
+@RegisterRowMapper(PushMapper.class)
 public interface PushDAO {
-    
+
     @SqlUpdate("CREATE TABLE IF NOT EXISTS push (" +
             "  id INT AUTO_INCREMENT(1, 1) PRIMARY KEY" +
             ", received TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
             ", user_id INT NOT NULL" +
             ", branch VARCHAR(64) NOT NULL" +
             ", project_id INT NOT NULL" +
-            ", before VARCHAR(64)" +
-            ", after VARCHAR(64)" +
+            ", before VARCHAR(64)" + ", after VARCHAR(64)" +
             ", merge_request_id INT DEFAULT 0" +
             ", merge_status_date TIMESTAMP" +            
             ", merge_state VARCHAR(32)" +
@@ -68,5 +66,6 @@ public interface PushDAO {
             " FROM push WHERE project_id = :projectId AND merge_request_id = :mergeRequestId ORDER BY received DESC")
     List<Push> find(@Bind("projectId") int projectId, @Bind("mergeRequestId") int mergeRequestId);
 
+    @SqlUpdate("")
     void close();
 }

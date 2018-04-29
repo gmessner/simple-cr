@@ -3,13 +3,13 @@ package org.gitlab4j.codereview.dao;
 import java.util.List;
 
 import org.gitlab4j.codereview.dao.ProjectConfig.ProjectConfigMapper;
-import org.skife.jdbi.v2.sqlobject.Bind;
-import org.skife.jdbi.v2.sqlobject.BindBean;
-import org.skife.jdbi.v2.sqlobject.SqlQuery;
-import org.skife.jdbi.v2.sqlobject.SqlUpdate;
-import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapper;
+import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
+import org.jdbi.v3.sqlobject.customizer.Bind;
+import org.jdbi.v3.sqlobject.customizer.BindBean;
+import org.jdbi.v3.sqlobject.statement.SqlQuery;
+import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
-@RegisterMapper(ProjectConfigMapper.class)
+@RegisterRowMapper(ProjectConfigMapper.class)
 public interface ProjectConfigDAO {
 
     @SqlUpdate("CREATE TABLE IF NOT EXISTS project_config (" +
@@ -48,5 +48,6 @@ public interface ProjectConfigDAO {
     @SqlQuery("SELECT * from project_config ORDER by created")
     List<ProjectConfig> list();
 
+    @SqlUpdate("")
     void close();
 }
