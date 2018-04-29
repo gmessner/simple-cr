@@ -19,11 +19,6 @@ import org.jdbi.v3.sqlobject.SqlObjectPlugin;
 
 public class CodeReviewServer {
 
-    static {
-//        System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
-//        System.setProperty("org.apache.commons.logging.simplelog.showdatetime", "true");
-//        System.setProperty("org.apache.commons.logging.simplelog.defaultlog", "info");
-    }
     private static Logger logger = LogManager.getLogger();
 
     private CodeReviewConfiguration config;
