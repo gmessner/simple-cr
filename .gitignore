@@ -1,0 +1,12 @@
+.classpath
+.gitattributes
+.gitignore
+.gradle/
+.project
+.settings/
+bin/
+build/
+dbdata/
+logs/
+simple-cr.properties
+target/
