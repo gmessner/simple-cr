@@ -3,8 +3,8 @@ package org.gitlab4j.codereview;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.webhook.WebHookManager;
 import org.gitlab4j.codereview.dao.ProjectConfigDAO;
@@ -13,21 +13,24 @@ import org.gitlab4j.codereview.server.DefaultEmbeddedServer;
 import org.gitlab4j.codereview.server.EmbeddedServer;
 import org.gitlab4j.codereview.server.EmbeddedServerWithSsl;
 import org.h2.jdbcx.JdbcConnectionPool;
-import org.skife.jdbi.v2.DBI;
+import org.jdbi.v3.core.Handle;
+import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.sqlobject.SqlObjectPlugin;
 
 public class CodeReviewServer {
 
     static {
-        System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
-        System.setProperty("org.apache.commons.logging.simplelog.showdatetime", "true");
-        System.setProperty("org.apache.commons.logging.simplelog.defaultlog", "info");
+//        System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
+//        System.setProperty("org.apache.commons.logging.simplelog.showdatetime", "true");
+//        System.setProperty("org.apache.commons.logging.simplelog.defaultlog", "info");
     }
-    private static Log log = LogFactory.getLog(CodeReviewServer.class);
+    private static Logger logger = LogManager.getLogger();
 
     private CodeReviewConfiguration config;
     private EmbeddedServer server;
     private GitLabApi gitlabApi;
     private JdbcConnectionPool connectionPool;
+    private Jdbi jdbi;
     private WebHookManager webHookManager;
 
     private CodeReviewServer() {
@@ -59,9 +62,10 @@ public class CodeReviewServer {
         server.setAttribute(EmbeddedServer.CONFIG, config);
         server.setAttribute(EmbeddedServer.GITLAB_API, gitlabApi);
         server.setAttribute(EmbeddedServer.CONNECTION_POOL, connectionPool);
+        server.setAttribute(EmbeddedServer.JDBI, jdbi);
         server.setAttribute(WebHookManager.class.getSimpleName(), webHookManager);
         
-        CodeReviewWebHookListener handler = new CodeReviewWebHookListener(config, gitlabApi, connectionPool);
+        CodeReviewWebHookListener handler = new CodeReviewWebHookListener(config, gitlabApi, jdbi);
         webHookManager.addListener(handler);
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -69,7 +73,7 @@ public class CodeReviewServer {
             public void run() {
 
                 try {
-                    log.info("Waiting for Simple-CR server to stop");
+                    logger.info("Waiting for Simple-CR server to stop");
                     server.stop();
                     server.join();
                 } catch (Exception e) {
@@ -82,11 +86,16 @@ public class CodeReviewServer {
     private void initializeDatabase() {
 
         connectionPool = JdbcConnectionPool.create("jdbc:h2:" + config.getDbName(), config.getDbUser(), config.getDbPassword());
-        DBI dbi = new DBI(connectionPool);
-        PushDAO pushDao = dbi.open(PushDAO.class);
-        pushDao.createTable();
-        ProjectConfigDAO projectConfigDao = dbi.open(ProjectConfigDAO.class);
-        projectConfigDao.createTable();
+        jdbi = Jdbi.create(connectionPool);
+        jdbi.installPlugin(new SqlObjectPlugin());
+
+        try (Handle handle = jdbi.open()) {
+            PushDAO pushDao = handle.attach(PushDAO.class);
+            pushDao.createTable();
+
+            ProjectConfigDAO projectConfigDao = handle.attach(ProjectConfigDAO.class);
+            projectConfigDao.createTable();
+        }
     }
 
     private EmbeddedServer getServer() {
@@ -104,12 +113,12 @@ public class CodeReviewServer {
             System.exit(1);
         }
 
-        log.info("Starting Simple-CR server");
+        logger.info("Starting Simple-CR server");
         codeReviewServer.init();
 
         EmbeddedServer server = codeReviewServer.getServer();
         server.start();
-        log.info("Simple-CR server started and ready");
+        logger.info("Simple-CR server started and ready");
 
         if (codeReviewServer.isInteractive()) {
 
@@ -126,7 +135,7 @@ public class CodeReviewServer {
                 }
             }
 
-            log.info("Waiting for Simple-CR server to stop");
+            logger.info("Waiting for Simple-CR server to stop");
             server.stop();
         }
 

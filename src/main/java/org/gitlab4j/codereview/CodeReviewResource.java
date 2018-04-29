@@ -18,11 +18,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.h2.jdbcx.JdbcConnectionPool;
-import org.skife.jdbi.v2.DBI;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.MergeRequest;
@@ -36,6 +33,7 @@ import org.gitlab4j.codereview.dao.Push;
 import org.gitlab4j.codereview.dao.PushDAO;
 import org.gitlab4j.codereview.server.EmbeddedServer;
 import org.gitlab4j.codereview.utils.HashUtils;
+import org.jdbi.v3.core.Jdbi;
 
 /**
  * CodeReviewResource
@@ -45,7 +43,7 @@ import org.gitlab4j.codereview.utils.HashUtils;
 @Path("/rest")
 public class CodeReviewResource {
 
-    private static Log log = LogFactory.getLog(CodeReviewResource.class);
+    private static Logger logger = LogManager.getLogger();
 
     @Context
     ServletContext servletContext;
@@ -58,7 +56,7 @@ public class CodeReviewResource {
     public Response getForm(@PathParam("projectId") int projectId, @PathParam("branchName") String branchName, @PathParam("userId") int userId,
             @PathParam("signature") String signature) {
 
-        log.info("getForm: projectId=" + projectId + ", branchName=" + branchName + ", userId=" + userId + ", signature=" + signature);
+        logger.info("getForm: projectId=" + projectId + ", branchName=" + branchName + ", userId=" + userId + ", signature=" + signature);
 
         if (!HashUtils.isValidHash(signature, HashUtils.SHORT_HASH, projectId, branchName, userId)) {
             System.err.println("WARNING: invalid signature");
@@ -73,7 +71,7 @@ public class CodeReviewResource {
     @Path("/load")
     @Produces(MediaType.APPLICATION_JSON)
     public Response load() {
-        log.warn("load() called without parameters");
+        logger.warn("load() called without parameters");
         return (AppResponse.getMessageResponse(false, "No branch specified, nothing to review here."));
     }
 
@@ -83,10 +81,10 @@ public class CodeReviewResource {
     public Response load(@PathParam("projectId") int projectId, @PathParam("branchName") String branchName, @PathParam("userId") int userId,
             @PathParam("signature") String signature) {
 
-        log.info("load: projectId=" + projectId + ", branchName=" + branchName + ", userId=" + userId + ", signature=" + signature);
+        logger.info("load: projectId=" + projectId + ", branchName=" + branchName + ", userId=" + userId + ", signature=" + signature);
 
         if (!HashUtils.isValidHash(signature, HashUtils.SHORT_HASH, projectId, branchName, userId)) {
-            log.warn("Invalid signature");
+            logger.warn("Invalid signature");
             return (AppResponse.getMessageResponse(false, "Bad code review data request"));
         }
 
@@ -97,12 +95,12 @@ public class CodeReviewResource {
         try {
             project = gitlabApi.getProjectApi().getProject(projectId);
         } catch (GitLabApiException gle) {
-            log.error("Problem getting project info" + ", httpStatus=" + gle.getHttpStatus() + ", error=" + gle.getMessage());
+            logger.error("Problem getting project info" + ", httpStatus=" + gle.getHttpStatus() + ", error=" + gle.getMessage());
             return (AppResponse.getMessageResponse(false, "Could not load project info for code review"));
         }
 
         if (project.getId() == null || !project.getId().equals(projectId)) {
-            log.error("Problem getting project info, projectId=" + projectId + ", project.id=" + project.getId());
+            logger.error("Problem getting project info, projectId=" + projectId + ", project.id=" + project.getId());
             return (AppResponse.getMessageResponse(false, "Could not load project info for code review"));
         }
 
@@ -110,12 +108,12 @@ public class CodeReviewResource {
         try {
             user = gitlabApi.getUserApi().getUser(userId);
         } catch (GitLabApiException gle) {
-            log.error("Problem getting user info, httpStatus=" + gle.getHttpStatus() + ", error=" + gle.getMessage());
+            logger.error("Problem getting user info, httpStatus=" + gle.getHttpStatus() + ", error=" + gle.getMessage());
             return (AppResponse.getMessageResponse(false, "Could not load project info for code review"));
         }
 
         if (user.getId() == null || !user.getId().equals(userId)) {
-            log.error("Problem getting user info, userId=" + userId + ", user.id=" + user.getId());
+            logger.error("Problem getting user info, userId=" + userId + ", user.id=" + user.getId());
             return (AppResponse.getMessageResponse(false, "Could not load user info for code review"));
         }
 
@@ -128,7 +126,7 @@ public class CodeReviewResource {
         List<Push> pushList = dao.findPendingReviews(userId, projectId, branchName);
         if (pushList != null && pushList.size() > 0) {
 
-            log.info("This branch is already pending review" + ", userId=" + userId + ", projectId=" + projectId + ", branch=" + branchName);
+            logger.info("This branch is already pending review" + ", userId=" + userId + ", projectId=" + projectId + ", branch=" + branchName);
             statusText = "This branch push is already pending review.";
             status = AppResponse.Status.NO_ACTION;
 
@@ -137,7 +135,7 @@ public class CodeReviewResource {
             // Make sure we have a push record that has not been submitted for code review
             pushList = dao.find(userId, projectId, branchName, 0);
             if (pushList == null || pushList.size() == 0) {
-                log.info("No branch pushes are available for review" + ", userId=" + userId + ", projectId=" + projectId + ", branch=" + branchName);
+                logger.info("No branch pushes are available for review" + ", userId=" + userId + ", projectId=" + projectId + ", branch=" + branchName);
 
                 pushList = dao.find(userId, projectId, branchName);
 
@@ -175,7 +173,7 @@ public class CodeReviewResource {
             @FormParam("merge_request[target_branch]") String targetBranch, @FormParam("merge_request[title]") String title,
             @FormParam("merge_request[description]") String description) {
 
-        log.info("submit: user_id=" + userId + ", source_project_id=" + sourceProjectId + ", sourceBranch=" + sourceBranch + ", targetProjectId=" + targetProjectId
+        logger.info("submit: user_id=" + userId + ", source_project_id=" + sourceProjectId + ", sourceBranch=" + sourceBranch + ", targetProjectId=" + targetProjectId
                 + ", targetBranch=" + targetBranch + ", title=" + title + ", description=" + description);
 
         ServletContext servletContext = request.getServletContext();
@@ -185,13 +183,13 @@ public class CodeReviewResource {
         ProjectConfigDAO projectConfigDao = getProjectConfigDAO();
         ProjectConfig projectConfig = projectConfigDao.find(targetProjectId);
         if (projectConfig == null) {
-            log.info("The target project is not in the simple-cr system, targetProjectId=" + targetProjectId);
+            logger.info("The target project is not in the simple-cr system, targetProjectId=" + targetProjectId);
             String message = "The specified project was not found in simple-cr the system.";
             return (AppResponse.getMessageResponse(AppResponse.Status.NO_ACTION, message));
         }
 
         if (!projectConfig.getEnabled()) {
-            log.info("The target project does not have code reviews enabled, targetProjectId=" + targetProjectId);
+            logger.info("The target project does not have code reviews enabled, targetProjectId=" + targetProjectId);
             String message = "The target project does not have code reviews enabled.";
             return (AppResponse.getMessageResponse(AppResponse.Status.NO_ACTION, message));
         }
@@ -200,7 +198,7 @@ public class CodeReviewResource {
         PushDAO dao = getPushDAO();
         List<Push> pushList = dao.find(userId, sourceProjectId, sourceBranch, 0);
         if (pushList == null || pushList.size() == 0) {
-            log.info("No branch pushes are available for review" + ", userId=" + userId + ", projectId=" + sourceProjectId + ", branch=" + sourceBranch);
+            logger.info("No branch pushes are available for review" + ", userId=" + userId + ", projectId=" + sourceProjectId + ", branch=" + sourceBranch);
             return (AppResponse.getMessageResponse(AppResponse.Status.NO_ACTION, "This branch is already pending review."));
         }
 
@@ -208,7 +206,7 @@ public class CodeReviewResource {
         try {
             mergeRequest = gitlabApi.getMergeRequestApi().createMergeRequest(targetProjectId, sourceBranch, targetBranch, title, description, null);
         } catch (GitLabApiException gle) {
-            log.error("Problem creating merge request" + ", httpStatus=" + gle.getHttpStatus() + ", error=" + gle.getMessage());
+            logger.error("Problem creating merge request" + ", httpStatus=" + gle.getHttpStatus() + ", error=" + gle.getMessage());
             return (AppResponse.getMessageResponse(AppResponse.Status.NO_ACTION, "This branch has already been merged or deleted"));
         }
 
@@ -221,7 +219,7 @@ public class CodeReviewResource {
 
         return (AppResponse.getMessageResponse(true, "Your request for code review and merge has been submitted."));
     }
-    
+
     @SuppressWarnings("unused")
     private Integer getDefaultAssignee(ProjectConfig projectConfig) {
 
@@ -236,14 +234,12 @@ public class CodeReviewResource {
     }
 
     private ProjectConfigDAO getProjectConfigDAO() {
-        JdbcConnectionPool pool = (JdbcConnectionPool) servletContext.getAttribute(EmbeddedServer.CONNECTION_POOL);
-        DBI dbi = new DBI(pool);
-        return (dbi.onDemand(ProjectConfigDAO.class));
+        Jdbi jdbi = (Jdbi) servletContext.getAttribute(EmbeddedServer.JDBI);
+        return (jdbi.onDemand(ProjectConfigDAO.class));
     }
 
     private PushDAO getPushDAO() {
-        JdbcConnectionPool pool = (JdbcConnectionPool) servletContext.getAttribute(EmbeddedServer.CONNECTION_POOL);
-        DBI dbi = new DBI(pool);
-        return (dbi.onDemand(PushDAO.class));
+        Jdbi jdbi = (Jdbi) servletContext.getAttribute(EmbeddedServer.JDBI);
+        return (jdbi.onDemand(PushDAO.class));
     }
 }

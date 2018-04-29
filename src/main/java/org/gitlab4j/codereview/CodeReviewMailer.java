@@ -8,13 +8,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeSet;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.commons.mail.DefaultAuthenticator;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.Author;
@@ -34,7 +35,7 @@ import org.gitlab4j.codereview.utils.VelocityUtils;
  */
 public class CodeReviewMailer {
 
-    private static Log log = LogFactory.getLog(CodeReviewMailer.class);
+    private static Logger logger = LogManager.getLogger();
 
     private static final String CODE_REVIEW_TEMPLATE = "/templates/code-review.vm";
     private static final String CODE_REVIEW_SUBJECT = "Your Branch Push";
@@ -61,12 +62,12 @@ public class CodeReviewMailer {
         try {
             project = gitlabApi.getProjectApi().getProject(projectId);
         } catch (GitLabApiException gle) {
-            log.error("Problem getting project info, httpStatus=" + gle.getHttpStatus() + ", error=" + gle.getMessage(), gle);
+            logger.error("Problem getting project info, httpStatus=" + gle.getHttpStatus() + ", error=" + gle.getMessage(), gle);
             return (false);
         }
 
         if (project.getId() == null || !project.getId().equals(projectId)) {
-            log.error("Problem getting project info, projectId=" + projectId + ", project.id=" + project.getId());
+            logger.error("Problem getting project info, projectId=" + projectId + ", project.id=" + project.getId());
             return (false);
         }
 
@@ -78,7 +79,7 @@ public class CodeReviewMailer {
 
         Collection<String> reviewers = getReviewers(projectConfig, project.getNamespace().getId(), author);
         if (reviewers == null || reviewers.size() < 1) {
-            log.warn("No reviewers are configured for this project.");
+            logger.warn("No reviewers are configured for this project.");
             return (false);
         }
 
@@ -103,7 +104,7 @@ public class CodeReviewMailer {
             return (true);
 
         } catch (Exception e) {
-            log.error("Something went wrong while sending code review email, error=" + e.getMessage(), e);
+            logger.error("Something went wrong while sending code review email, error=" + e.getMessage(), e);
             return (false);
         }
     }
@@ -138,14 +139,14 @@ public class CodeReviewMailer {
 
             Reader reader = new InputStreamReader(CodeReviewMailer.class.getResourceAsStream(CODE_REVIEW_TEMPLATE));
             String htmlContent = VelocityUtils.getTextBody(reader, data);
-            log.debug("Email body: \n" + htmlContent);
+            logger.debug("Email body: \n" + htmlContent);
             reader.close();
 
             send(user.getEmail(), user.getName(), CODE_REVIEW_SUBJECT, htmlContent);
             return (true);
 
         } catch (Exception e) {
-            log.error("Something went wrong while sending code review email, error=" + e.getMessage(), e);
+            logger.error("Something went wrong while sending code review email, error=" + e.getMessage(), e);
             return (false);
         }
     }
@@ -226,25 +227,29 @@ public class CodeReviewMailer {
 
             try {
                 members = gitlabApi.getGroupApi().getMembers(groupId);
-                log.info("GROUP reviewer list, numMembers=" + (members == null ? 0 : members.size()));
+                logger.info("GROUP reviewer list, numMembers=" + (members == null ? 0 : members.size()));
             } catch (GitLabApiException e) {
-                log.error("Something went wrong while getting group members, error=" + e.getMessage(), e);
+                logger.error("Something went wrong while getting group members, error=" + e.getMessage(), e);
             }
 
         } else if (MailToType.PROJECT.equals(projectConfig.getMailToType())) {
 
             try {
                 members = gitlabApi.getProjectApi().getMembers(projectConfig.getProjectId());
-                log.info("PROJECT reviewer list, numMembers=" + (members == null ? 0 : members.size()));
+                logger.info("PROJECT reviewer list, numMembers=" + (members == null ? 0 : members.size()));
             } catch (GitLabApiException e) {
-                log.error("Something went wrong while getting project members, error=" + e.getMessage(), e);
+                logger.error("Something went wrong while getting project members, error=" + e.getMessage(), e);
             }
         }
 
         if (members != null) {
             for (Member member : members) {
-                if (member != null && member.getEmail() != null)
-                    reviewers.add(member.getEmail());
+                Optional<User> optionalUser = gitlabApi.getUserApi().getOptionalUser(member.getId());
+                if (optionalUser.isPresent()) {
+                    String email = optionalUser.get().getEmail();
+                    if (email != null && email.trim().length() > 0)
+                        reviewers.add(email);
+                }
             }
         }
 

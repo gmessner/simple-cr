@@ -20,34 +20,30 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.h2.jdbcx.JdbcConnectionPool;
-import org.skife.jdbi.v2.DBI;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.Project;
 import org.gitlab4j.api.models.ProjectHook;
 import org.gitlab4j.codereview.beans.AppResponse;
 import org.gitlab4j.codereview.dao.ProjectConfig;
-import org.gitlab4j.codereview.dao.ProjectConfigDAO;
 import org.gitlab4j.codereview.dao.ProjectConfig.MailToType;
+import org.gitlab4j.codereview.dao.ProjectConfigDAO;
 import org.gitlab4j.codereview.server.EmbeddedServer;
 import org.gitlab4j.codereview.utils.StringUtils;
+import org.jdbi.v3.core.Jdbi;
 
 /**
  * AdminResource
  * 
- * This class provides endpoint for GitLab-CR admin functionality, providing for the management of
- * the gitlab repository project monitoring.
- * 
- * @author greg@messners.com
+ * This class provides an endpoint for GitLab-CR admin functionality, providing for the management of
+ * the gitlab repository project being monitored.
  */
 @Path("/admin")
 public class AdminResource {
 
-    private static Log log = LogFactory.getLog(AdminResource.class);
+    private static Logger logger = LogManager.getLogger();
 
     @Context
     ServletContext servletContext;
@@ -62,7 +58,7 @@ public class AdminResource {
     public Response get(@PathParam("groupName") String groupName, @PathParam("projectName") String projectName) {
 
         checkAuthentication();
-        log.info("List code review setup for project, group=" + groupName + ", project=" + projectName);
+        logger.info("List code review setup for project, group=" + groupName + ", project=" + projectName);
 
         GitLabApi gitlabApi = (GitLabApi) servletContext.getAttribute(EmbeddedServer.GITLAB_API);
 
@@ -71,7 +67,7 @@ public class AdminResource {
         try {
             project = getProject(gitlabApi, groupName, projectName);
         } catch (ResponseException re) {
-            log.error("Problem getting project info, error=" + re.getMessage());
+            logger.error("Problem getting project info, error=" + re.getMessage());
             return (AppResponse.getMessageResponse(false, "Could not load project info from GitLab server"));
         }
 
@@ -93,7 +89,7 @@ public class AdminResource {
             @FormParam("exclude_mail_to") String excludeMailTo, @DefaultValue("false") @FormParam("include_default_mail_to") boolean includeDefaultMailTo) {
 
         checkAuthentication();
-        log.info("Add code review setup for project, group=" + groupName + ", project=" + projectName);
+        logger.info("Add code review setup for project, group=" + groupName + ", project=" + projectName);
 
         GitLabApi gitlabApi = (GitLabApi) servletContext.getAttribute(EmbeddedServer.GITLAB_API);
         CodeReviewConfiguration config = (CodeReviewConfiguration) servletContext.getAttribute(EmbeddedServer.CONFIG);
@@ -106,7 +102,7 @@ public class AdminResource {
         ProjectConfigDAO dao = getProjectConfigDAO();
         ProjectConfig projectConfig = dao.find(projectId);
         if (projectConfig != null) {
-            log.info("This project is already in the system, use PUT to make modifications" + ", group=" + groupName + ", project=" + projectName);
+            logger.info("This project is already in the system, use PUT to make modifications" + ", group=" + groupName + ", project=" + projectName);
             String message = "This project is already in the system, use PUT to make modifications.";
             throw (new ResponseException(Response.Status.CONFLICT, message));
         }
@@ -147,7 +143,7 @@ public class AdminResource {
         }
 
         URI createdUri = uriInfo.getRequestUri();
-        log.info("Created project config for " + groupName + "/" + projectName + ", location=" + createdUri.toString());
+        logger.info("Created project config for " + groupName + "/" + projectName + ", location=" + createdUri.toString());
         return (Response.created(createdUri).build());
     }
 
@@ -159,7 +155,7 @@ public class AdminResource {
             @FormParam("include_default_mail_to") Boolean includeDefaultMailTo) {
 
         checkAuthentication();
-        log.info("Update code review setup for project, group=" + groupName + ", project=" + projectName);
+        logger.info("Update code review setup for project, group=" + groupName + ", project=" + projectName);
 
         // Get the specified project
         GitLabApi gitlabApi = (GitLabApi) servletContext.getAttribute(EmbeddedServer.GITLAB_API);
@@ -171,7 +167,7 @@ public class AdminResource {
         ProjectConfig projectConfig = dao.find(projectId);
 
         if (projectConfig == null) {
-            log.info("This project was not in the system" + ", group=" + groupName + ", project=" + projectName);
+            logger.info("This project was not in the system" + ", group=" + groupName + ", project=" + projectName);
             String message = "The specified project was not found in simple-cr the system.";
             throw (new ResponseException(Response.Status.NOT_FOUND, message));
         }
@@ -188,7 +184,6 @@ public class AdminResource {
 
         if (enabled != null) {
             projectConfig.setEnabled(enabled);
-            ;
         }
 
         if (additionalMailTo != null) {
@@ -219,7 +214,7 @@ public class AdminResource {
         }
 
         String message = "Updated project config for " + groupName + "/" + projectName;
-        log.info(message);
+        logger.info(message);
         return (Response.ok().entity(message).type(MediaType.TEXT_PLAIN).build());
     }
 
@@ -229,7 +224,7 @@ public class AdminResource {
     public Response delete(@PathParam("groupName") String groupName, @PathParam("projectName") String projectName) {
 
         checkAuthentication();
-        log.info("Delete code review setup for project, group=" + groupName + ", project=" + projectName);
+        logger.info("Delete code review setup for project, group=" + groupName + ", project=" + projectName);
 
         // Get the specified project
         GitLabApi gitlabApi = (GitLabApi) servletContext.getAttribute(EmbeddedServer.GITLAB_API);
@@ -240,7 +235,7 @@ public class AdminResource {
         ProjectConfigDAO dao = getProjectConfigDAO();
         ProjectConfig projectConfig = dao.find(projectId);
         if (projectConfig == null) {
-            log.info("This project was not in the system" + ", group=" + groupName + ", project=" + projectName);
+            logger.info("This project was not in the system" + ", group=" + groupName + ", project=" + projectName);
             String message = "The specified project was not found in the simple-cr system.";
             throw (new ResponseException(Response.Status.NOT_FOUND, message));
         }
@@ -259,7 +254,7 @@ public class AdminResource {
         }
 
         String message = "Deleted project config for " + groupName + "/" + projectName;
-        log.info(message);
+        logger.info(message);
         return (Response.ok().entity(message).type(MediaType.TEXT_PLAIN).build());
     }
 
@@ -268,15 +263,14 @@ public class AdminResource {
         try {
             return (gitlabApi.getProjectApi().getProject(groupName, projectName));
         } catch (GitLabApiException gle) {
-            log.error("Problem getting project info, httpStatus=" + gle.getHttpStatus() + ", error=" + gle.getMessage());
+            logger.error("Problem getting project info, httpStatus=" + gle.getHttpStatus() + ", error=" + gle.getMessage());
             throw (new ResponseException(gle));
         }
     }
 
     private ProjectConfigDAO getProjectConfigDAO() {
-        JdbcConnectionPool pool = (JdbcConnectionPool) servletContext.getAttribute(EmbeddedServer.CONNECTION_POOL);
-        DBI dbi = new DBI(pool);
-        return (dbi.onDemand(ProjectConfigDAO.class));
+        Jdbi jdbi = (Jdbi) servletContext.getAttribute(EmbeddedServer.JDBI);
+        return (jdbi.onDemand(ProjectConfigDAO.class));
     }
 
     /**
