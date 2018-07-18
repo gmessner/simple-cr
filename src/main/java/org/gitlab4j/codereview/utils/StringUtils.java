@@ -1,5 +1,7 @@
 package org.gitlab4j.codereview.utils;
 
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,12 +40,12 @@ public class StringUtils {
 
         return (list);
     }
-    
+
     public static final String buildUrlString(String ... urlItems) {
-        
+
         if (urlItems == null || urlItems.length == 0)
             return ("");
-        
+
         StringBuilder urlString = new StringBuilder();
         for (String urlItem : urlItems) {
           
@@ -51,7 +53,6 @@ public class StringUtils {
               
                urlItem = urlItem.trim();
                if (urlItem.length() > 0) {
-               
                    int length = urlString.length();
                    if (length > 0 && urlItem.charAt(0) != '/' && urlString.charAt(length - 1) != '/')
                        urlString.append('/');
@@ -62,5 +63,21 @@ public class StringUtils {
         }
         
         return (urlString.toString());
+    }
+
+    public static String urlEncodeString(String s) {
+        try {
+            return(URLEncoder.encode(s, "UTF-8"));
+        } catch (Exception e) {
+            throw (new RuntimeException(e.getMessage()));
+        }
+    }
+
+    public static String urlDecodeString(String s) {
+        try {
+            return (URLDecoder.decode(s, "UTF-8"));
+        } catch (Exception e) {
+            throw (new RuntimeException(e.getMessage()));
+        }
     }
 }

@@ -1,12 +1,20 @@
 package org.gitlab4j.codereview;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.gitlab4j.codereview.utils.StringUtils;
 
 import joptsimple.OptionParser;
@@ -14,6 +22,8 @@ import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 
 public class CodeReviewConfiguration {
+
+    private static Logger logger = LogManager.getLogger();
 
     public static final String PATH = "path";
     public static final String PORT = "port";
@@ -25,11 +35,13 @@ public class CodeReviewConfiguration {
     public static final String INTERACTIVE = "interactive";
     public static final String SMTP_PORT = "smtp-port";
     public static final String SMTP_HOST = "smtp-host";
+    public static final String SMTP_ENABLE_STARTTLS = "smtp-enable-starttls";
     public static final String SMTP_USERNAME = "smtp-username";
     public static final String SMTP_PASSWORD = "smtp-password";
     public static final String FROM_EMAIL = "from-email";
     public static final String FROM_NAME = "from-name";
     public static final String DEFAULT_REVIEWERS = "default-reviewers";
+    public static final String DEFAULT_TARGET_BRANCHES_REGEX = "default-target-branches-regex";
 
     public static final String DB_NAME = "db-name";
     public static final String DB_USER = "db-user";
@@ -53,11 +65,30 @@ public class CodeReviewConfiguration {
 
     CodeReviewConfiguration(String filename) throws ConfigurationException {
 
-        FileBasedConfigurationBuilder<PropertiesConfiguration> builder = new FileBasedConfigurationBuilder<PropertiesConfiguration>(PropertiesConfiguration.class)
-                .configure(new Parameters().properties().setFileName(filename).setThrowExceptionOnMissing(true).setListDelimiterHandler(new DefaultListDelimiterHandler(','))
+        FileBasedConfigurationBuilder<PropertiesConfiguration> builder = 
+                new FileBasedConfigurationBuilder<PropertiesConfiguration>(PropertiesConfiguration.class)
+                .configure(new Parameters().properties()
+                        .setFileName(filename).setThrowExceptionOnMissing(true)
+                        .setListDelimiterHandler(new DefaultListDelimiterHandler(','))
                         .setIncludesAllowed(false));
 
-        config = builder.getConfiguration();
+        try {
+
+            // HACK: We do this because of a known issue with getConfiguration(), an inconsequential problem is
+            // dumped to standard err, we simply catch it and log it at the debug level
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            System.setErr(new PrintStream(baos));
+            config = builder.getConfiguration();
+            String configOutput = baos.toString();
+            if (configOutput != null && configOutput.trim().length() > 0) {
+                List<String> lines = Arrays.stream(configOutput.split(System.lineSeparator())).collect(Collectors.toList());
+                lines.forEach(line -> logger.debug(line.trim()));
+            }
+
+        } finally {
+            // Make sure to reset standard err
+            System.setErr(new PrintStream(new FileOutputStream(FileDescriptor.err)));
+        }
     }
 
     CodeReviewConfiguration() {
@@ -77,7 +108,9 @@ public class CodeReviewConfiguration {
         OptionSpec<Boolean> interactiveOption = parser.accepts(INTERACTIVE).withOptionalArg().ofType(Boolean.class).defaultsTo(Boolean.TRUE);
         OptionSpec<Integer> smtpPortOption = parser.accepts(SMTP_PORT).withRequiredArg().ofType(Integer.class).defaultsTo(DEFAULT_SMTP_PORT);
         OptionSpec<String> smtpHostOption = parser.accepts(SMTP_HOST).withRequiredArg().ofType(String.class).defaultsTo(DEFAULT_SMTP_HOST);
+        OptionSpec<Boolean> smtpEnableStartTlsOption = parser.accepts(SMTP_ENABLE_STARTTLS).withOptionalArg().ofType(Boolean.class).defaultsTo(Boolean.TRUE);
         OptionSpec<String> defaultReviewersOption = parser.accepts(DEFAULT_REVIEWERS).withRequiredArg().ofType(String.class);
+        OptionSpec<String> defaultTargetBranchesRegexOption = parser.accepts(DEFAULT_TARGET_BRANCHES_REGEX).withRequiredArg().ofType(String.class);
 
         OptionSet options = parser.parse(args);
         if (options.has(interactiveOption)) {
@@ -104,6 +137,7 @@ public class CodeReviewConfiguration {
             String apiToken = options.valueOf(apiTokenOption);
             config.setProperty(GITLAB_API_TOKEN, apiToken);
         }
+
         if (options.has(gitlabApiOption)) {
             String gitlabApiUrl = options.valueOf(gitlabApiOption);
             config.setProperty(GITLAB_API_URL, gitlabApiUrl);
@@ -127,6 +161,20 @@ public class CodeReviewConfiguration {
         if (options.has(smtpHostOption)) {
             String smtpHost = options.valueOf(smtpHostOption);
             config.setProperty(SMTP_HOST, smtpHost);
+        }
+        if (options.has(smtpHostOption)) {
+            String smtpHost = options.valueOf(smtpHostOption);
+            config.setProperty(SMTP_HOST, smtpHost);
+        }
+
+        if (options.has(defaultTargetBranchesRegexOption)) {
+            String defaultTargetBranchesRegex = options.valueOf(defaultTargetBranchesRegexOption);
+            config.setProperty(DEFAULT_TARGET_BRANCHES_REGEX, defaultTargetBranchesRegex);
+        }
+
+        if (options.has(smtpEnableStartTlsOption)) {
+            Boolean enableStartTls = options.valueOf(smtpEnableStartTlsOption);
+            config.setProperty(SMTP_ENABLE_STARTTLS, enableStartTls);
         }
 
         String defaultReviewers;
@@ -210,6 +258,10 @@ public class CodeReviewConfiguration {
         return (config.getString(SMTP_PASSWORD, null));
     }
 
+    public Boolean getSmtpEnableStartTls() {
+        return (config.getBoolean(SMTP_ENABLE_STARTTLS, Boolean.FALSE));
+    }
+
     public String getFromEmail() {
         return (config.getString(FROM_EMAIL, DEFAULT_FROM_EMAIL));
     }
@@ -220,6 +272,10 @@ public class CodeReviewConfiguration {
 
     public List<String> getDefaultReviewers() {
         return (defaultReviewers);
+    }
+
+    public String getDefaultTargetBranchesRegex() {
+        return (config.getString(FROM_NAME, DEFAULT_TARGET_BRANCHES_REGEX));
     }
 
     public String getDbPassword() {

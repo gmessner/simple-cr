@@ -1,5 +1,5 @@
 
-package org.gitlab4j.codereview;
+package org.gitlab4j.codereview.resources;
 
 import java.io.InputStream;
 import java.util.List;
@@ -25,6 +25,8 @@ import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.MergeRequest;
 import org.gitlab4j.api.models.Project;
 import org.gitlab4j.api.models.User;
+import org.gitlab4j.codereview.CodeReviewConfiguration;
+import org.gitlab4j.codereview.CodeReviewMailer;
 import org.gitlab4j.codereview.beans.AppResponse;
 import org.gitlab4j.codereview.beans.CodeReviewInfo;
 import org.gitlab4j.codereview.dao.ProjectConfig;
@@ -124,11 +126,22 @@ public class CodeReviewResource {
         // Make sure that we don't have a pending code review for this branch
         PushDAO dao = getPushDAO();
         List<Push> pushList = dao.findPendingReviews(userId, projectId, branchName);
+        String title = null;
+        String description = null;
+        List<String> targetBranches = null;
         if (pushList != null && pushList.size() > 0) {
 
             logger.info("This branch is already pending review" + ", userId=" + userId + ", projectId=" + projectId + ", branch=" + branchName);
             statusText = "This branch push is already pending review.";
             status = AppResponse.Status.NO_ACTION;
+
+            try {
+                MergeRequest mergeRequest = gitlabApi.getMergeRequestApi().getMergeRequest(projectId, pushList.get(0).getMergeRequestId());
+                title = mergeRequest.getTitle();
+                description = mergeRequest.getDescription();
+            } catch (GitLabApiException gle) {
+                logger.warn("Problem getting merge request info, httpStatus=" + gle.getHttpStatus() + ", error=" + gle.getMessage());
+            }
 
         } else {
 
@@ -161,6 +174,9 @@ public class CodeReviewResource {
         codeReviewInfo.setName(user.getName());
         codeReviewInfo.setEmail(user.getEmail());
         codeReviewInfo.setGitlabWebUrl(config.getGitLabWebUrl());
+        codeReviewInfo.setTargetBranches(targetBranches);
+        codeReviewInfo.setTitle(title);
+        codeReviewInfo.setDescription(description);
         return (AppResponse.getResponse(status, statusText, codeReviewInfo));
     }
 

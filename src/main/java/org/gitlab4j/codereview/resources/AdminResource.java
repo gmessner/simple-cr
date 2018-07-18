@@ -1,5 +1,5 @@
 
-package org.gitlab4j.codereview;
+package org.gitlab4j.codereview.resources;
 
 import java.net.URI;
 
@@ -26,6 +26,7 @@ import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.Project;
 import org.gitlab4j.api.models.ProjectHook;
+import org.gitlab4j.codereview.CodeReviewConfiguration;
 import org.gitlab4j.codereview.beans.AppResponse;
 import org.gitlab4j.codereview.dao.ProjectConfig;
 import org.gitlab4j.codereview.dao.ProjectConfig.MailToType;
@@ -84,9 +85,11 @@ public class AdminResource {
 
     @POST
     @Path("/{groupName}/{projectName}")
-    public Response add(@PathParam("groupName") String groupName, @PathParam("projectName") String projectName, @DefaultValue("true") @FormParam("enabled") boolean enabled,
+    public Response add(@PathParam("groupName") String groupName, @PathParam("projectName") String projectName,
+            @DefaultValue("true") @FormParam("enabled") boolean enabled, @FormParam("branch_regex") String branchRegex,
             @DefaultValue("project") @FormParam("mail_to") String mailTo, @FormParam("additional_mail_to") String additionalMailTo,
-            @FormParam("exclude_mail_to") String excludeMailTo, @DefaultValue("false") @FormParam("include_default_mail_to") boolean includeDefaultMailTo) {
+            @FormParam("exclude_mail_to") String excludeMailTo,
+            @DefaultValue("false") @FormParam("include_default_mail_to") boolean includeDefaultMailTo) {
 
         checkAuthentication();
         logger.info("Add code review setup for project, group=" + groupName + ", project=" + projectName);
@@ -129,6 +132,7 @@ public class AdminResource {
             projectConfig.setProjectId(projectId);
             projectConfig.setHookId(projectHook.getId());
             projectConfig.setEnabled(enabled);
+            projectConfig.setBranchRegex(branchRegex);
             projectConfig.setMailToType(mailToType);
             projectConfig.setAdditionalMailTo(additionalMailTo);
             projectConfig.setExcludeMailTo(excludeMailTo);
@@ -151,8 +155,8 @@ public class AdminResource {
     @Path("/{groupName}/{projectName}")
     @Produces(MediaType.TEXT_PLAIN)
     public Response update(@PathParam("groupName") String groupName, @PathParam("projectName") String projectName, @FormParam("enabled") Boolean enabled,
-            @FormParam("mail_to") String mailTo, @FormParam("additional_mail_to") String additionalMailTo, @FormParam("exclude_mail_to") String excludeMailTo,
-            @FormParam("include_default_mail_to") Boolean includeDefaultMailTo) {
+            @FormParam("branch_regex") String branchRegex, @FormParam("mail_to") String mailTo, @FormParam("additional_mail_to") String additionalMailTo,
+            @FormParam("exclude_mail_to") String excludeMailTo, @FormParam("include_default_mail_to") Boolean includeDefaultMailTo) {
 
         checkAuthentication();
         logger.info("Update code review setup for project, group=" + groupName + ", project=" + projectName);
@@ -186,9 +190,18 @@ public class AdminResource {
             projectConfig.setEnabled(enabled);
         }
 
+        if (branchRegex != null) {
+
+            if (branchRegex.trim().isEmpty()) {
+                branchRegex = null;
+            }
+
+            projectConfig.setBranchRegex(branchRegex);
+        }
+
         if (additionalMailTo != null) {
 
-            if (additionalMailTo.trim().length() == 0) {
+            if (additionalMailTo.trim().isEmpty()) {
                 additionalMailTo = null;
             }
 
@@ -197,7 +210,7 @@ public class AdminResource {
 
         if (excludeMailTo != null) {
 
-            if (excludeMailTo.trim().length() == 0) {
+            if (excludeMailTo.trim().isEmpty()) {
                 excludeMailTo = null;
             }
 

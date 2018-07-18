@@ -1,5 +1,5 @@
 
-package org.gitlab4j.codereview;
+package org.gitlab4j.codereview.resources;
 
 import javax.servlet.ServletContext;
 import javax.ws.rs.Consumes;

@@ -49,6 +49,8 @@ public class ProjectConfig {
     private boolean enabled;
     private int projectId;
     private int hookId;
+    private String branchRegex;
+    private String targetBranchesRegex; 
     private String mailTo;
     private String additionalMailTo;
     private String excludeMailTo;
@@ -129,6 +131,34 @@ public class ProjectConfig {
      */
     public void setHookId(int hookId) {
         this.hookId = hookId;
+    }
+
+    /**
+     * @return the branchRegex
+     */
+    public String getBranchRegex() {
+        return branchRegex;
+    }
+
+    /**
+     * @param branchRegex the branchRegex to set
+     */
+    public void setBranchRegex(String branchRegex) {
+        this.branchRegex = branchRegex;
+    }
+
+    /**
+     * @return the targetBranchesRegex
+     */
+    public String getTargetBranchesRegex() {
+        return targetBranchesRegex;
+    }
+
+    /**
+     * @param targetBranchesRegex the targetBranchesRegex to set
+     */
+    public void setTargetBranchesRegex(String targetBranchesRegex) {
+        this.targetBranchesRegex = targetBranchesRegex;
     }
 
     /**
@@ -235,6 +265,8 @@ public class ProjectConfig {
             config.projectId = rs.getInt("project_id");
             config.hookId = rs.getInt("hook_id");
             config.enabled = rs.getBoolean("enabled");
+            config.branchRegex = rs.getString("branch_regex");
+            config.targetBranchesRegex = rs.getString("target_branches_regex");
             config.mailTo = rs.getString("mail_to");
             config.additionalMailTo = rs.getString("additional_mail_to");
             config.excludeMailTo = rs.getString("exclude_mail_to");

@@ -1,4 +1,4 @@
-package org.gitlab4j.codereview;
+package org.gitlab4j.codereview.resources;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;

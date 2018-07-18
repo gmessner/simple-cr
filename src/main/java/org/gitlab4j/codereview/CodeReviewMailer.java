@@ -31,7 +31,6 @@ import org.gitlab4j.codereview.utils.VelocityUtils;
 
 /**
  * 
- * @author greg@messners.com
  */
 public class CodeReviewMailer {
 
@@ -46,12 +45,12 @@ public class CodeReviewMailer {
     private CodeReviewConfiguration config;
     private GitLabApi gitlabApi;
 
-    CodeReviewMailer(CodeReviewConfiguration config, GitLabApi gitlabApi) {
+    public CodeReviewMailer(CodeReviewConfiguration config, GitLabApi gitlabApi) {
         this.config = config;
         this.gitlabApi = gitlabApi;
     }
 
-    boolean sendMergeRequestEmail(ProjectConfig projectConfig, MergeRequest mergeRequest) {
+    public boolean sendMergeRequestEmail(ProjectConfig projectConfig, MergeRequest mergeRequest) {
 
         if (!isEmailEnabled()) {
             return (false);
@@ -121,9 +120,10 @@ public class CodeReviewMailer {
          */
         Integer userId = user.getId();
         Integer projectId = project.getId();
+        String encodedBranch = StringUtils.urlEncodeString(branch);
         String signature = HashUtils.makeHash(HashUtils.SHORT_HASH, projectId, branch, userId);
-        String codeReviewLink = StringUtils.buildUrlString(config.getSimpleCrUrl(), config.getPath(), 
-                "?p=" + projectId + "&b=" + branch + "&u=" + userId + "&s=" + signature);
+        String codeReviewLink = StringUtils.buildUrlString(config.getSimpleCrUrl(), config.getPath(), "app",
+                "?p=" + projectId + "&b=" + encodedBranch + "&u=" + userId + "&s=" + signature);
 
         Map<String, Object> data = new HashMap<String, Object>();
         data.put("codeReviewLink", codeReviewLink);
@@ -183,6 +183,10 @@ public class CodeReviewMailer {
         HtmlEmail email = new HtmlEmail();
         email.setHostName(smtpHost);
         email.setSmtpPort(smtpPort);
+
+        if (config.getSmtpEnableStartTls()) {
+            email.setStartTLSEnabled(true);
+        }
 
         for (EmailAddress toEmail : toEmailList) {
             email.addTo(toEmail.email, toEmail.name);

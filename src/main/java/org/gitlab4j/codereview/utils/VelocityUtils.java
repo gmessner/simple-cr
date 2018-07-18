@@ -18,7 +18,7 @@ public class VelocityUtils {
      * @return the expanded Velocity template as a String
      * @throws Exception
      */
-    public static String getTextBody(String template, Map<String, ?> params) throws Exception {
+    public static String getTextBody(String template, Map<String, Object> params) throws Exception {
 
         VelocityEngine ve = new VelocityEngine();
         ve.setProperty("resource.loader", "class");
@@ -42,7 +42,7 @@ public class VelocityUtils {
      * @return the expanded Velocity template as a String
      * @throws Exception
      */
-    public static String getTextBody(Reader reader, Map<String, ?> params) throws Exception {
+    public static String getTextBody(Reader reader, Map<String, Object> params) throws Exception {
 
         VelocityEngine ve = new VelocityEngine();
         ve.setProperty("resource.loader", "class");

@@ -1,5 +1,7 @@
 package org.gitlab4j.codereview.beans;
 
+import java.util.List;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -22,6 +24,10 @@ public class CodeReviewInfo {
     private String targetBranch;
 
     private String gitlabWebUrl;
+
+    private List<String> targetBranches;
+    private String title;
+    private String description;
 
     /**
      * @return the group
@@ -175,5 +181,47 @@ public class CodeReviewInfo {
      */
     public void setGitlabWebUrl(String gitlabWebUrl) {
         this.gitlabWebUrl = gitlabWebUrl;
+    }
+
+    /**
+     * @return the targetBranches
+     */
+    public List<String> getTargetBranches() {
+        return targetBranches;
+    }
+
+    /**
+     * @param targetBranches the targetBranches to set
+     */
+    public void setTargetBranches(List<String> targetBranches) {
+        this.targetBranches = targetBranches;
+    }
+
+    /**
+     * @return the title
+     */
+    public String getTitle() {
+        return title;
+    }
+
+    /**
+     * @param title the title to set
+     */
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    /**
+     * @return the description
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
+     * @param description the description to set
+     */
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

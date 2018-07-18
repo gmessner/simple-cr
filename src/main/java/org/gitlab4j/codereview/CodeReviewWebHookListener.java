@@ -2,7 +2,7 @@ package org.gitlab4j.codereview;
 
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gitlab4j.api.GitLabApi;
@@ -20,6 +20,8 @@ import org.gitlab4j.api.webhook.PushEvent;
 import org.gitlab4j.api.webhook.TagPushEvent;
 import org.gitlab4j.api.webhook.WebHookListener;
 import org.gitlab4j.api.webhook.WikiPageEvent;
+import org.gitlab4j.codereview.dao.ProjectConfig;
+import org.gitlab4j.codereview.dao.ProjectConfigDAO;
 import org.gitlab4j.codereview.dao.Push;
 import org.gitlab4j.codereview.dao.PushDAO;
 import org.jdbi.v3.core.Handle;
@@ -31,8 +33,6 @@ import org.jdbi.v3.core.Jdbi;
  * 
  * We track the lifecycle of the code review request here and update a Push record. This makes sure
  * we are not doing additional requests on the same branch that has yet to be reviewed.
- * 
- * @author greg@messners.com
  *
  */
 public class CodeReviewWebHookListener implements WebHookListener {
@@ -151,14 +151,31 @@ public class CodeReviewWebHookListener implements WebHookListener {
         String branchName = pushEvent.getBranch();
         logger.info("A branch has been pushed, userId=" + userId + ", projectId=" + projectId + ", branch=" + branchName);
 
+        ProjectConfigDAO projectConfigDao = jdbi.onDemand(ProjectConfigDAO.class);
+        ProjectConfig projectConfig = projectConfigDao.find(projectId);
+        if (projectConfig == null) {
+            logger.info("This project is not in the Simple-CR system, projectId=" + projectId);
+            return;
+        }
+
         if (StringUtils.isEmpty(branchName)) {
-            logger.error("branch name is either null or not valid, ref=" + pushEvent.getRef());
+            logger.warn("branch name is either null or not valid, ref=" + pushEvent.getRef());
             return;
         }
 
         if (branchName.equals("master")) {
-            logger.warn("No code reviews are done on master.");
+            logger.info("No code reviews are done on master.");
             return;
+        }
+
+        // If a branchRegex is configured, make sure the branch matches the regex
+        String branchRegex = projectConfig.getBranchRegex();
+        if (branchRegex != null && branchRegex.trim().length() > 0) {
+           if (!branchName.matches(branchRegex)) {
+               logger.info("The pushed branch is not configured to trigger Simple-CR, pushed branch=" +
+                       branchName + ", branchRegex=" + branchRegex);
+               return;
+           }
         }
 
         Project project = null;
