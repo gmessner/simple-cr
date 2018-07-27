@@ -10,16 +10,10 @@ import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.MergeRequest;
 import org.gitlab4j.api.models.Project;
 import org.gitlab4j.api.models.User;
-import org.gitlab4j.api.webhook.BuildEvent;
-import org.gitlab4j.api.webhook.IssueEvent;
 import org.gitlab4j.api.webhook.MergeRequestEvent;
 import org.gitlab4j.api.webhook.MergeRequestEvent.ObjectAttributes;
-import org.gitlab4j.api.webhook.NoteEvent;
-import org.gitlab4j.api.webhook.PipelineEvent;
 import org.gitlab4j.api.webhook.PushEvent;
-import org.gitlab4j.api.webhook.TagPushEvent;
 import org.gitlab4j.api.webhook.WebHookListener;
-import org.gitlab4j.api.webhook.WikiPageEvent;
 import org.gitlab4j.codereview.dao.ProjectConfig;
 import org.gitlab4j.codereview.dao.ProjectConfigDAO;
 import org.gitlab4j.codereview.dao.Push;
@@ -236,35 +230,5 @@ public class CodeReviewWebHookListener implements WebHookListener {
 
         CodeReviewMailer mailer = new CodeReviewMailer(config, gitlabApi);
         mailer.sendCodeReviewEmail(user, project, branchName);
-    }
-
-    @Override
-    public void onBuildEvent(BuildEvent buildEvent) {
-        logger.warn("We do not handle build events in this webhook");
-    }
-
-    @Override
-    public void onIssueEvent(IssueEvent issueEvent) {
-        logger.warn("We do not handle issues in this webhook");
-    }
-
-    @Override
-    public void onNoteEvent(NoteEvent noteEvent) {
-        logger.warn("We do not handle note events in this webhook");
-    }
-
-    @Override
-    public void onPipelineEvent(PipelineEvent pipelineEvent) {
-        logger.warn("We do not handle pipeline events in this webhook");
-    }
-
-    @Override
-    public void onTagPushEvent(TagPushEvent tagPushEvent) {
-        logger.warn("We do not handle tag push events in this webhook");
-    }
-
-    @Override
-    public void onWikiPageEvent(WikiPageEvent wikiEvent) {
-        logger.warn("We do not handle wiki page events in this webhook");
     }
 }
