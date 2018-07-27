@@ -275,7 +275,7 @@ public class CodeReviewConfiguration {
     }
 
     public String getDefaultTargetBranchesRegex() {
-        return (config.getString(FROM_NAME, DEFAULT_TARGET_BRANCHES_REGEX));
+        return (config.getString(DEFAULT_TARGET_BRANCHES_REGEX, null));
     }
 
     public String getDbPassword() {

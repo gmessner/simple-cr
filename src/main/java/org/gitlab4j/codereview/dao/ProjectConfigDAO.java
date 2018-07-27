@@ -19,7 +19,7 @@ public interface ProjectConfigDAO {
             ", hook_id int NOT NULL" + 
             ", enabled BOOLEAN DEFAULT TRUE" +
             ", branch_regex VARCHAR(256)" +
-            ", target_branches_regex VARCHAR(256)" +
+            ", target_branch_regex VARCHAR(256)" +
             ", mail_to VARCHAR(16) DEFAULT 'NONE'" +
             ", additional_mail_to VARCHAR(1024)" +
             ", exclude_mail_to VARCHAR(1024)" +
@@ -31,13 +31,14 @@ public interface ProjectConfigDAO {
     void dropTable();
 
     @SqlUpdate("INSERT INTO project_config" +
-            " (project_id, hook_id, enabled, branch_regex, target_branches_regex, mail_to, additional_mail_to, exclude_mail_to, include_default_mail_to)" +
-            " VALUES(:projectId, :hookId, :enabled, :branchRegex, :targetBranchesRegex, :mailTo, :additionalMailTo, :excludeMailTo, :includeDefaultMailTo)")
+            " (project_id, hook_id, enabled, branch_regex, target_branch_regex, mail_to, additional_mail_to, exclude_mail_to, include_default_mail_to)" +
+            " VALUES(:projectId, :hookId, :enabled, :branchRegex, :targetBranchRegex, :mailTo, :additionalMailTo, :excludeMailTo, :includeDefaultMailTo)")
     int insert(@BindBean ProjectConfig projectConfig);
 
     @SqlUpdate("UPDATE project_config" +
-            " (enabled, branch_regex, target_branches_regex, mail_to, additional_mail_to, exclude_mail_to, include_default_mail_to)" +
-            " VALUES(:enabled, :branchRegex, :targetBranchesRegex, :mailTo, :additionalMailTo, :excludeMailTo, :includeDefaultMailTo)")
+            " SET enabled = :enabled, branch_regex = :branchRegex, target_branch_regex = :targetBranchRegex, mail_to = :mailTo" +
+            ", additional_mail_to = :additionalMailTo, exclude_mail_to = :excludeMailTo, include_default_mail_to = :includeDefaultMailTo" +
+            " WHERE project_id = :projectId")
     int update(@BindBean ProjectConfig projectConfig);
 
     @SqlUpdate("DELETE FROM project_config WHERE project_id = :projectId")

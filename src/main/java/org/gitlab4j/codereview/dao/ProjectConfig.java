@@ -50,7 +50,7 @@ public class ProjectConfig {
     private int projectId;
     private int hookId;
     private String branchRegex;
-    private String targetBranchesRegex; 
+    private String targetBranchRegex; 
     private String mailTo;
     private String additionalMailTo;
     private String excludeMailTo;
@@ -148,17 +148,17 @@ public class ProjectConfig {
     }
 
     /**
-     * @return the targetBranchesRegex
+     * @return the targetBranchRegex
      */
-    public String getTargetBranchesRegex() {
-        return targetBranchesRegex;
+    public String getTargetBranchRegex() {
+        return targetBranchRegex;
     }
 
     /**
-     * @param targetBranchesRegex the targetBranchesRegex to set
+     * @param targetBranchRegex the targetBranchRegex to set
      */
-    public void setTargetBranchesRegex(String targetBranchesRegex) {
-        this.targetBranchesRegex = targetBranchesRegex;
+    public void setTargetBranchesRegex(String targetBranchRegex) {
+        this.targetBranchRegex = targetBranchRegex;
     }
 
     /**
@@ -266,7 +266,7 @@ public class ProjectConfig {
             config.hookId = rs.getInt("hook_id");
             config.enabled = rs.getBoolean("enabled");
             config.branchRegex = rs.getString("branch_regex");
-            config.targetBranchesRegex = rs.getString("target_branches_regex");
+            config.targetBranchRegex = rs.getString("target_branch_regex");
             config.mailTo = rs.getString("mail_to");
             config.additionalMailTo = rs.getString("additional_mail_to");
             config.excludeMailTo = rs.getString("exclude_mail_to");
